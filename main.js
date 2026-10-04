@@ -16,7 +16,6 @@ app.setDesktopName('qobuz-compact-client');
 function createWindow() {
   const window = new BrowserWindow({
     width: 1180, height: 820, minWidth: 480, minHeight: 540,
-    icon: path.join(__dirname, 'assets', 'icon.png'),
     backgroundColor: '#0b0d10',
     autoHideMenuBar: true,
     webPreferences: {
