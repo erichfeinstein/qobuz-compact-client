@@ -1,86 +1,103 @@
-const { app, BrowserWindow, globalShortcut, nativeTheme } = require("electron");
-const fs = require("node:fs/promises");
-const path = require("node:path");
+const { app, BrowserWindow, shell } = require('electron');
+const path = require('node:path');
+const { APP_ORIGIN, configureSession, protectNavigation } = require('./security');
 
-const QOBUZ_URL = "https://play.qobuz.com";
-const THEME_PATH = path.join(__dirname, "theme.css");
-const QOBUZ_ICON = path.join(__dirname, "assets", "icon.png");
-
+const debug = process.env.QOBUZ_DEBUG === '1';
+const profile = debug ? 'qobuz-compact-client-debug' : 'qobuz-compact-client';
 let mainWindow;
 
-// Local-only DevTools endpoint for inspecting the live Qobuz DOM during theming.
-app.commandLine.appendSwitch("remote-debugging-port", "9223");
-nativeTheme.themeSource = "dark";
-// Pin the profile dir and set the window's WM_CLASS so GNOME matches it to
-// qobuz-compact-client.desktop for the dock icon.
-app.setPath("userData", path.join(app.getPath("appData"), "qobuz-compact-client"));
-app.setDesktopName("qobuz-compact-client");
-
-const hasSingleInstanceLock = app.requestSingleInstanceLock();
-if (!hasSingleInstanceLock) app.quit();
-
-async function applyTheme(window) {
-  const css = await fs.readFile(THEME_PATH, "utf8");
-  await window.webContents.insertCSS(css);
-  await window.webContents.executeJavaScript(`
-    document.documentElement.classList.remove("theme-light");
-    document.documentElement.classList.add("theme-dark");
-    document.body.classList.remove("theme-light");
-    document.body.classList.add("theme-dark");
-  `);
+if (debug) {
+  app.commandLine.appendSwitch('remote-debugging-address', '127.0.0.1');
+  app.commandLine.appendSwitch('remote-debugging-port', '9223');
 }
+app.setPath('userData', path.join(app.getPath('appData'), profile));
+app.setDesktopName('qobuz-compact-client');
 
 function createWindow() {
-  mainWindow = new BrowserWindow({
-    width: 1180,
-    height: 820,
-    minWidth: 480,
-    minHeight: 540,
-    titleBarStyle: "hidden",
-    titleBarOverlay: {
-      color: "#121212",
-      symbolColor: "#ffffff",
-      height: 48,
-    },
-    icon: QOBUZ_ICON,
-    backgroundColor: "#0b0d10",
+  const window = new BrowserWindow({
+    width: 1180, height: 820, minWidth: 480, minHeight: 540,
+    icon: path.join(__dirname, 'assets', 'icon.png'),
+    backgroundColor: '#0b0d10',
     autoHideMenuBar: true,
     webPreferences: {
       contextIsolation: true,
       nodeIntegration: false,
-      partition: "persist:qobuz-compact",
+      sandbox: true,
+      partition: 'persist:qobuz-compact',
     },
   });
+  mainWindow = window;
+  const contents = window.webContents;
+  configureSession(contents.session);
+  protectNavigation(contents, url => shell.openExternal(url));
+  let showingError = false;
 
-  mainWindow.webContents.debugger.attach("1.3");
-  mainWindow.webContents.debugger.sendCommand("Emulation.setEmulatedMedia", {
-    features: [{ name: "prefers-color-scheme", value: "dark" }],
-  }).catch(console.error);
+  async function showError() {
+    if (window.isDestroyed() || showingError) return;
+    showingError = true;
+    try {
+      await window.loadFile(path.join(__dirname, 'load-error.html'));
+    } catch {
+      if (!window.isDestroyed()) console.error('Could not display the connection error.');
+    }
+  }
 
-  mainWindow.webContents.on("did-finish-load", () => {
-    applyTheme(mainWindow).catch(console.error);
+  function loadPlayer() {
+    if (window.isDestroyed()) return;
+    showingError = false;
+    window.loadURL(APP_ORIGIN).catch(error => {
+      if (!window.isDestroyed() && error.code !== 'ERR_ABORTED') void showError();
+    });
+  }
+
+  contents.on('did-fail-load', (_event, code, _description, _url, isMainFrame) => {
+    if (isMainFrame && code !== -3) void showError();
   });
-
-  mainWindow.loadURL(QOBUZ_URL);
-  mainWindow.show();
-  mainWindow.focus();
+  contents.on('render-process-gone', () => {
+    showingError = false;
+    void showError();
+  });
+  // The local error page needs no preload or IPC: its retry link returns here.
+  contents.on('will-navigate', (event, value) => {
+    if (showingError && (event.url || value) === APP_ORIGIN + '/') {
+      event.preventDefault();
+      loadPlayer();
+    }
+  });
+  contents.on('before-input-event', (event, input) => {
+    if (input.type !== 'keyDown' || !input.shift || !(input.control || input.meta) || input.alt) return;
+    const key = input.key.toLowerCase();
+    if (key === 'r') {
+      event.preventDefault();
+      if (showingError) loadPlayer();
+      else contents.reloadIgnoringCache();
+    } else if (key === 'i') {
+      event.preventDefault();
+      contents.toggleDevTools();
+    }
+  });
+  window.on('closed', () => { if (mainWindow === window) mainWindow = null; });
+  loadPlayer();
+  window.show();
+  window.focus();
 }
 
-app.whenReady().then(() => {
-  createWindow();
-  globalShortcut.register("CommandOrControl+Shift+R", () => mainWindow.webContents.reloadIgnoringCache());
-  globalShortcut.register("CommandOrControl+Shift+I", () => mainWindow.webContents.toggleDevTools());
-
-  app.on("activate", () => {
-    if (BrowserWindow.getAllWindows().length === 0) createWindow();
-  });
-
-  app.on("second-instance", () => {
+if (!app.requestSingleInstanceLock()) {
+  app.quit();
+} else {
+  // Register early: a second launch can arrive before the first window exists.
+  app.on('second-instance', () => {
+    if (!mainWindow || mainWindow.isDestroyed()) return;
     if (mainWindow.isMinimized()) mainWindow.restore();
     mainWindow.show();
     mainWindow.focus();
   });
-});
-
-app.on("window-all-closed", () => app.quit());
-app.on("will-quit", () => globalShortcut.unregisterAll());
+  app.whenReady().then(() => {
+    createWindow();
+    app.on('activate', () => { if (!mainWindow) createWindow(); });
+  }).catch(() => {
+    console.error('Could not start Qobuz.');
+    app.quit();
+  });
+}
+app.on('window-all-closed', () => app.quit());

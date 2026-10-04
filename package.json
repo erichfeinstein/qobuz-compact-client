@@ -2,14 +2,19 @@
   "name": "qobuz-compact-client",
   "version": "0.1.0",
   "private": true,
-  "description": "A frameless, local Qobuz desktop wrapper.",
+  "description": "An unofficial desktop wrapper for the standard Qobuz web player.",
   "main": "main.js",
   "scripts": {
     "start": "electron .",
-    "test": "node test/window-controls.cjs"
+    "test": "node --test --test-concurrency=1 test/policy.cjs test/security.cjs test/window-controls.cjs",
+    "check": "node tools/check.cjs",
+    "inspect": "node tools/inspect.cjs"
   },
   "devDependencies": {
-    "electron": "^39.2.7",
+    "electron": "44.5.1",
     "playwright-core": "^1.58.2"
+  },
+  "engines": {
+    "node": ">=22"
   }
 }
