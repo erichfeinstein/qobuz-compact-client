@@ -36,7 +36,12 @@ function createWindow() {
     height: 820,
     minWidth: 480,
     minHeight: 540,
-    frame: false,
+    titleBarStyle: "hidden",
+    titleBarOverlay: {
+      color: "#121212",
+      symbolColor: "#ffffff",
+      height: 48,
+    },
     icon: QOBUZ_ICON,
     backgroundColor: "#0b0d10",
     autoHideMenuBar: true,

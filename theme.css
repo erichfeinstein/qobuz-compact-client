@@ -23,6 +23,11 @@ body {
   align-items: center !important;
   display: flex !important;
   height: 48px !important;
+  /* Keep navigation outside the native close/minimize/maximize buttons. */
+  box-sizing: border-box !important;
+  width: env(titlebar-area-width, 100%) !important;
+  max-width: calc(100% - (100vw - env(titlebar-area-width, 100vw))) !important;
+  margin-left: env(titlebar-area-x, 0px) !important;
   padding: 0 14px !important;
   background: transparent !important;
   border-bottom: 0 !important;

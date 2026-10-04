@@ -14,7 +14,6 @@ async function setDarkTheme() {
   await darkButton.waitFor({ state: "attached", timeout: 2_000 });
   await darkButton.evaluate((button) => button.click());
   await page.waitForTimeout(500);
-  await page.screenshot({ path: "/tmp/opencode/qobuz-dark-theme.png" });
   await browser.close();
 }
 

@@ -44,7 +44,7 @@ async function inspect() {
     };
   });
 
-  await page.screenshot({ path: "/tmp/opencode/qobuz-playwright.png" });
+  // Inspect computed styles only. Never capture or save screenshots.
   console.log(JSON.stringify(navbar, null, 2));
   await browser.close();
 }
