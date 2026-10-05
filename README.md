@@ -1,7 +1,9 @@
 # Qobuz Compact Client
 
-An unofficial Linux desktop wrapper for Qobuz’s standard web player.
-It does not modify the player’s HTML or CSS. Not affiliated with Qobuz.
+An unofficial Linux desktop wrapper for Qobuz’s web player, with a compact dark theme.
+The local `theme.css` is reapplied whenever the player loads. Search filters keep
+their original actions, with rounded pills, a larger close target, and dark scrollbars.
+Not affiliated with Qobuz.
 
 Requires Node.js 22+ and a Linux desktop. There are no packaged releases yet.
 

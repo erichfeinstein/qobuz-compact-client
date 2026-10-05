@@ -1,1 +1,64 @@
-<!doctype html><html><head><style>body { margin: 0; }</style></head><body><nav class="NavBar">Window controls test</nav></body></html>
+<!doctype html>
+<html><head><meta charset="utf-8"><style>
+/* Relevant Qobuz 8.2 search markup and layout rules, without account/network data. */
+body { margin: 0; font: 15px Arial, sans-serif; }
+.NavBar { display: flex; height: 56px; }
+.NavBar__drag { flex-grow: 1; -webkit-app-region: drag; }
+.TagBar { border-bottom: 1px solid; padding: 20px 0 10px; position: fixed; right: 15px; left: 0; top: 56px; z-index: 100; }
+.TagBar__wrapper { box-sizing: border-box; padding: 0 16px; width: 100%; }
+.TagBar__titles, .TagBar__container, .TagBar__tags { display: flex; }
+.TagBar__title { font-size: 17px; font-weight: bold; margin: 0 0 20px; }
+.TagBar__title:first-child, .TagBar__tags:first-child { margin-right: 20px; width: calc(35% - 30px); }
+.TagBar__tags:first-child .TagBar__tag { align-items: center; border-radius: 4px; color: #0070ef; cursor: pointer; display: flex; height: 24px; padding: 0 8px 0 0; }
+.TagBar__tags:first-child .TagBar__tag .pct { align-items: center; border-right: 1px solid; display: flex; font-size: 8px; height: 100%; justify-content: center; margin-right: 8px; margin-top: -1px; width: 24px; }
+.TagBar__tags:first-child .TagBar__tag:not(:last-child) { margin-right: 10px; }
+.TagBar__tags:first-child .TagBar__tag p { margin: 0 !important; }
+.TagBar__tags div { margin-right: 10px; }
+.TagBar__tags:nth-child(2) .TagBar__tag { display: flex; align-items: center; margin: 0 20px 10px 0; }
+.TagBar__tags:nth-child(2) .TagBar__tag p { margin: 0 0 0 5px; }
+.fullsearch { overflow-x: hidden; overflow-y: scroll; width: 100vw; height: calc(100vh - 56px); }
+.fullsearch-wrapper { padding: 155px 20px 77px; }
+.fullsearch-close { background: transparent; border: none; cursor: pointer; font-size: 16px; margin: 0; padding: 0; position: fixed; right: 24px; top: 77px; z-index: 1000; }
+.theme-dark .TagBar { background: #121212; color: #e6e6e6; border-color: #242424; }
+.theme-dark .TagBar__tags:first-child .TagBar__tag { background: rgba(235,244,255,.06); }
+.TagBar__tags:first-child .TagBar__tag.selected { background: #0070ef; color: white; }
+.result { height: 1500px; }
+</style></head><body>
+<nav class="NavBar"><a href="#">Qobuz</a><div class="NavBar__drag"></div><input class="SearchBar__input" value="mega moon"><button class="SearchBar__reset">Clear</button></nav>
+<div class="fullsearch">
+  <button class="fullsearch-close" aria-label="Close" type="button">×</button>
+  <div class="TagBar"><div class="TagBar__wrapper">
+    <div class="TagBar__titles"><p class="TagBar__title">Add tags to your search:</p><p class="TagBar__title">Search in:</p></div>
+    <div class="TagBar__container">
+      <div class="TagBar__tags">
+        <div><span class="TagBar__tag"><span class="pct pct-add">+</span><p>Hi-Res</p></span></div>
+        <div><span class="TagBar__tag"><span class="pct pct-add">+</span><p>New Release</p></span></div>
+        <div><span class="TagBar__tag"><span class="pct pct-add">+</span><p>Strict</p></span></div>
+      </div>
+      <div class="TagBar__tags">
+        <div><span class="TagBar__tag"><span class="pct">○</span><p>Main Artist</p></span></div>
+        <div><span class="TagBar__tag"><span class="pct">○</span><p>Composer</p></span></div>
+        <div><span class="TagBar__tag"><span class="pct">○</span><p>Performer</p></span></div>
+        <div><span class="TagBar__tag"><span class="pct">○</span><p>Release Name</p></span></div>
+        <div><span class="TagBar__tag"><span class="pct">○</span><p>Label</p></span></div>
+      </div>
+    </div>
+  </div></div>
+  <div class="fullsearch-wrapper"><section class="result">Results</section></div>
+</div>
+<script>
+// Fixture handlers only check that CSS leaves the page's own controls reachable.
+for (const tag of document.querySelectorAll('.TagBar__tag')) tag.onclick = () => {
+  tag.classList.toggle('selected');
+  const selected = document.querySelector('.TagBar__tag.selected');
+  const clear = document.querySelector('.TagBar__button');
+  if (selected && !clear) {
+    const button = document.createElement('span');
+    button.className = 'TagBar__button';
+    button.textContent = 'Delete';
+    document.querySelector('.TagBar__container').append(button);
+  } else if (!selected && clear) clear.remove();
+};
+document.querySelector('.fullsearch-close').onclick = () => { document.querySelector('.fullsearch').hidden = true; };
+</script>
+</body></html>
