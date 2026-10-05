@@ -2,7 +2,7 @@
   "name": "qobuz-compact-client",
   "version": "0.1.0",
   "private": true,
-  "description": "An unofficial desktop wrapper for the standard Qobuz web player.",
+  "description": "An unofficial desktop wrapper for the Qobuz web player with a compact dark theme.",
   "main": "main.js",
   "scripts": {
     "start": "electron .",

@@ -1,10 +1,12 @@
-const { app, BrowserWindow, shell } = require('electron');
+const { app, BrowserWindow, shell, nativeTheme } = require('electron');
 const path = require('node:path');
+const fs = require('node:fs/promises');
 const { APP_ORIGIN, configureSession, protectNavigation } = require('./security');
 
 const debug = process.env.QOBUZ_DEBUG === '1';
 const profile = debug ? 'qobuz-compact-client-debug' : 'qobuz-compact-client';
 let mainWindow;
+nativeTheme.themeSource = 'dark';
 
 if (debug) {
   app.commandLine.appendSwitch('remote-debugging-address', '127.0.0.1');
@@ -30,6 +32,23 @@ function createWindow() {
   configureSession(contents.session);
   protectNavigation(contents, url => shell.openExternal(url));
   let showingError = false;
+
+  contents.on('did-finish-load', async () => {
+    if (new URL(contents.getURL()).origin !== APP_ORIGIN) return;
+    try {
+      const css = await fs.readFile(path.join(__dirname, 'theme.css'), 'utf8');
+      if (window.isDestroyed() || new URL(contents.getURL()).origin !== APP_ORIGIN) return;
+      await contents.insertCSS(css);
+      await contents.executeJavaScript(`
+        for (const element of [document.documentElement, document.body]) {
+          element.classList.remove('theme-light');
+          element.classList.add('theme-dark');
+        }
+      `);
+    } catch (error) {
+      if (!window.isDestroyed()) console.error('Could not apply Qobuz theme:', error.message);
+    }
+  });
 
   async function showError() {
     if (window.isDestroyed() || showingError) return;
